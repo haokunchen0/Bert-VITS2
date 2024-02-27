@@ -1,6 +1,7 @@
 """
 @Desc: 全局配置文件读取
 """
+
 import argparse
 import yaml
 from typing import Dict, List
@@ -38,17 +39,27 @@ class Preprocess_text_config:
         train_path: str,
         val_path: str,
         config_path: str,
-        val_per_spk: int = 5,
+        val_per_lang: int = 5,
         max_val_total: int = 10000,
         clean: bool = True,
     ):
-        self.transcription_path: str = transcription_path  # 原始文本文件路径，文本格式应为{wav_path}|{speaker_name}|{language}|{text}。
-        self.cleaned_path: str = cleaned_path  # 数据清洗后文本路径，可以不填。不填则将在原始文本目录生成
-        self.train_path: str = train_path  # 训练集路径，可以不填。不填则将在原始文本目录生成
-        self.val_path: str = val_path  # 验证集路径，可以不填。不填则将在原始文本目录生成
+        self.transcription_path: str = (
+            transcription_path  # 原始文本文件路径，文本格式应为{wav_path}|{speaker_name}|{language}|{text}。
+        )
+        self.cleaned_path: str = (
+            cleaned_path  # 数据清洗后文本路径，可以不填。不填则将在原始文本目录生成
+        )
+        self.train_path: str = (
+            train_path  # 训练集路径，可以不填。不填则将在原始文本目录生成
+        )
+        self.val_path: str = (
+            val_path  # 验证集路径，可以不填。不填则将在原始文本目录生成
+        )
         self.config_path: str = config_path  # 配置文件路径
-        self.val_per_spk: int = val_per_spk  # 每个speaker的验证集条数
-        self.max_val_total: int = max_val_total  # 验证集最大条数，多于的会被截断并放到训练集中
+        self.val_per_lang: int = val_per_lang  # 每个speaker的验证集条数
+        self.max_val_total: int = (
+            max_val_total  # 验证集最大条数，多于的会被截断并放到训练集中
+        )
         self.clean: bool = clean  # 是否进行数据清洗
 
     @classmethod
@@ -99,10 +110,12 @@ class Emo_gen_config:
         config_path: str,
         num_processes: int = 2,
         device: str = "cuda",
+        use_multi_device: bool = False,
     ):
         self.config_path = config_path
         self.num_processes = num_processes
         self.device = device
+        self.use_multi_device = use_multi_device
 
     @classmethod
     def from_dict(cls, dataset_path: str, data: Dict[str, any]):
@@ -126,7 +139,9 @@ class Train_ms_config:
     ):
         self.env = env  # 需要加载的环境变量
         self.base = base  # 底模配置
-        self.model = model  # 训练模型存储目录，该路径为相对于dataset_path的路径，而非项目根目录
+        self.model = (
+            model  # 训练模型存储目录，该路径为相对于dataset_path的路径，而非项目根目录
+        )
         self.config_path = config_path  # 配置文件路径
         self.num_workers = num_workers  # worker数量
         self.spec_cache = spec_cache  # 是否启用spec缓存
@@ -222,6 +237,9 @@ class Config:
             self.bert_gen_config: Bert_gen_config = Bert_gen_config.from_dict(
                 dataset_path, yaml_config["bert_gen"]
             )
+            self.emo_gen_config: Emo_gen_config = Emo_gen_config.from_dict(
+                dataset_path, yaml_config["emo_gen"]
+            )
             self.train_ms_config: Train_ms_config = Train_ms_config.from_dict(
                 dataset_path, yaml_config["train_ms"]
             )
@@ -241,4 +259,3 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-y", "--yml_config", type=str, default="config.yml")
 args, _ = parser.parse_known_args()
 config = Config(args.yml_config)
-yml_config = args.yml_config

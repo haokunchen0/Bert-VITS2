@@ -1,14 +1,23 @@
-from utils import get_hparams_from_file, load_checkpoint
+﻿from utils import get_hparams_from_file, load_checkpoint
 import json
 
 
-def export_onnx(export_path, model_path, config_path):
+def export_onnx(export_path, model_path, config_path, novq, dev):
     hps = get_hparams_from_file(config_path)
     version = hps.version[0:3]
-    if version == "2.0":
+    if version == "2.0" or (version == "2.1" and novq):
         from .V200 import SynthesizerTrn, symbols
-    elif version == "2.1":
+    elif version == "2.1" and (not novq):
         from .V210 import SynthesizerTrn, symbols
+    elif version == "2.2":
+        if novq and dev:
+            from .V220_novq_dev import SynthesizerTrn, symbols
+        else:
+            from .V220 import SynthesizerTrn, symbols
+    elif version == "2.3":
+        from .V230 import SynthesizerTrn, symbols
+    elif version == "2.4":
+        from .V240 import SynthesizerTrn, symbols
     net_g = SynthesizerTrn(
         len(symbols),
         hps.data.filter_length // 2 + 1,
@@ -25,6 +34,16 @@ def export_onnx(export_path, model_path, config_path):
     for key in hps.data.spk2id.keys():
         spklist.append(key)
 
+    LangDict = {"ZH": [0, 0], "JP": [1, 6], "EN": [2, 8]}
+    BertPaths = [
+        "chinese-roberta-wwm-ext-large",
+        "deberta-v2-large-japanese",
+        "bert-base-japanese-v3",
+    ]
+    if version == "2.4":
+        LangDict = {"ZH": [0, 0]}
+        BertPaths = ["chinese-roberta-wwm-ext-large"]
+
     MoeVSConf = {
         "Folder": f"{export_path}",
         "Name": f"{export_path}",
@@ -34,13 +53,10 @@ def export_onnx(export_path, model_path, config_path):
         "Rate": hps.data.sampling_rate,
         "CharaMix": True,
         "Characters": spklist,
-        "LanguageMap": {"ZH": [0, 0], "JP": [1, 6], "EN": [2, 8]},
+        "LanguageMap": LangDict,
         "Dict": "BasicDict",
-        "BertPath": [
-            "chinese-roberta-wwm-ext-large",
-            "deberta-v2-large-japanese",
-            "bert-base-japanese-v3",
-        ],
+        "BertPath": BertPaths,
+        "Clap": "clap-htsat-fused",
     }
 
     with open(f"onnx/{export_path}.json", "w") as MoeVsConfFile:

@@ -942,7 +942,7 @@ class SynthesizerTrn(nn.Module):
 
         torch.onnx.export(
             self.enc_p,
-            (x, x_lengths, tone, language, bert, ja_bert, en_bert, g, sid + 1, sid + 2),
+            (x, x_lengths, tone, language, bert, ja_bert, en_bert, g, sid, sid),
             f"onnx/{path}/{path}_enc_p.onnx",
             input_names=[
                 "x",
